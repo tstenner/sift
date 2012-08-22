@@ -18,6 +18,7 @@ syntax: glob
 
 # Matlab temporary files
 *.m~
+*.asv
 
 # arfit
 #arfit
@@ -26,3 +27,4 @@ syntax: glob
 #experimental
 @resources.zip
 archive*
+scripts/ScriptingExample.m.orig
