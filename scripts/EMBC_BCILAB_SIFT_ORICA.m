@@ -85,8 +85,8 @@ outstream_name = 'SIFT-Models';
 
 % ORICA-specific testing options (validation)
 TRUE_MIXING_MATRIX   = 'calibData.icawinv_true';     % can also be a matrix or []
-TRUE_SPHERING_MATRIX = 'calibData.icasphere_true';   % can also be a matrix or []
-RUN_PCA = true;
+TRUE_SPHERING_MATRIX = []; %'calibData.icasphere_true';   % can also be a matrix or []
+RUN_PCA = false;
 NUM_PCS = 8;
 
 %% load head model object
@@ -228,8 +228,8 @@ if ~isempty(TRUE_SPHERING_MATRIX)
         TRUE_SPHERING_MATRIX = eval(TRUE_SPHERING_MATRIX);
     end
 end
-opts.fltPipCfg.porica.perfmetrics.convergence.A = TRUE_MIXING_MATRIX;
-opts.fltPipCfg.porica.perfmetrics.convergence.spheremat = TRUE_SPHERING_MATRIX;
+% opts.fltPipCfg.porica.perfmetrics.convergence.A = TRUE_MIXING_MATRIX;
+% opts.fltPipCfg.porica.perfmetrics.convergence.spheremat = TRUE_SPHERING_MATRIX;
 
 %% initialize the output stream
 if opts.miscOptCfg.streamLSL
@@ -274,8 +274,8 @@ while ~opts.exitPipeline
             % create a new pipeline on training data
             fprintf('Pipeline changed\n');
             
-            opts.fltPipCfg.porica.perfmetrics.convergence.A = TRUE_MIXING_MATRIX;
-            opts.fltPipCfg.porica.perfmetrics.convergence.spheremat = TRUE_SPHERING_MATRIX;
+%             opts.fltPipCfg.porica.perfmetrics.convergence.A = TRUE_MIXING_MATRIX;
+%             opts.fltPipCfg.porica.perfmetrics.convergence.spheremat = TRUE_SPHERING_MATRIX;
             
             cleaned_data = exp_eval(flt_pipeline('signal',calibData,opts.fltPipCfg));
                         
@@ -542,8 +542,6 @@ while ~opts.exitPipeline
             % TODO: implement this as a figure
             vis_benchmark(benchmarking);
             
-            
-    
             % plot ORICA convergence
             if opts.fltPipCfg.porica.arg_selection && isfield(eeg_chunk,'convergence')
                 if ~exist('bpfig','var') || isempty(bpfig) || ~ishandle(bpfig)
