@@ -1,209 +1,398 @@
 
 function [figureHandles g] = vis_TimeFreqGrid(varargin)
+% Create a Time-Frequency Grid from an EEGLAB/SIFT dataset. 
+% For details on the Interactive Time-Frequency Grid see [1].
 %
-% Create a Time-Frequency Grid from a connectivity matrix. For details on
-% the Interactive Time-Frequency Grid see [1].
+% ----------------------------------------------------------------------------------------------------------------------------------------
+% Input                             Information                                                                                           
+% ----------------------------------------------------------------------------------------------------------------------------------------
+% ...| EEG:                         EEGLAB dataset(s)                                                                                     
+%                                   This is an array of at most two EEGLAB structures.                                                    
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 'MANDATORY INPUT'                                                                    
+%                                   Input Data Type: any evaluable Matlab expression.                                                     
+%                                                                                                                                         
+% ...| Conn:                        SIFT Conn object                                                                                      
+%                                   This is typically stored in EEG.CAT.Conn                                                              
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 'MANDATORY INPUT'                                                                    
+%                                   Input Data Type: any evaluable Matlab expression.                                                     
+%                                                                                                                                         
+% [+] PlotConditionDifference:      Plot difference between selected conditions                                                           
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 'n/a'                                                                                
+%                                   Input Data Type: boolean                                                                              
+%                                                                                                                                         
+% .......| ConditionOrder:          Order in which to take difference                                                                     
+%                                   Possible values: {''}                                                                                 
+%                                   Default value  : 'n/a'                                                                                
+%                                   Input Data Type: string                                                                               
+%                                                                                                                                         
+% ...| Stats:                       A structure containing statistics                                                                     
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 'n/a'                                                                                
+%                                   Input Data Type: real number (double)                                                                 
+%                                                                                                                                         
+% ...| VisualizationMode:           Visualization Modes                                                                                   
+%                                   Create Time-Frequency imageplots, Causality x Frequency plots (collapsing across time), Causality x   
+%                                   Time plots (collapsing across frequency)                                                              
+%                                   Possible values: {'TimeXFrequency', 'TimeXCausality', 'FrequencyXCausality'}                          
+%                                   Default value  : 'TimeXFrequency'                                                                     
+%                                   Input Data Type: string                                                                               
+%                                                                                                                                         
+% ...| msubset:                     Subset of the full matrix to keep                                                                     
+%                                   Lower/upper triangle ('tril'/'triu'), diagonals ('diag'), everything except diagonal ('nodiag'),      
+%                                   everything ('all').                                                                                   
+%                                   Possible values: {'tril', 'triu', 'diag', 'nodiag', 'all'}                                            
+%                                   Default value  : 'all'                                                                                
+%                                   Input Data Type: string                                                                               
+%                                                                                                                                         
+% [+] MatrixLayout:                 Select the measure and layout                                                                         
+%                                   Possible values: {'Full', 'Partial'}                                                                  
+%                                   Default value  : 'Full'                                                                               
+%                                   Input Data Type: string                                                                               
+% ....[+] Full:                                                                                                                           
+%                                                                                                                                         
+% .......| Estimator:               Estimator to visualize                                                                                
+%                                   Possible values: {''}                                                                                 
+%                                   Default value  : 'n/a'                                                                                
+%                                   Input Data Type: string                                                                               
+%                                                                                                                                         
+% .......| ColorLimits:             Color/Y-axis scaling limits                                                                           
+%                                   If [min max], scale by [min max]. If scalar, and all(Conn>0), limits are set to [0 maxprc]. If        
+%                                   scalar, and any(Conn<0), limits are set to [-maxprc maxprc] where maxprc is                           
+%                                   prctile(abs(Conn),scalar)                                                                             
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 100                                                                                  
+%                                   Input Data Type: real number (double)                                                                 
+% ....[+] Partial:                                                                                                                        
+%                                                                                                                                         
+% .......| UpperTriangle:           Estimator to render on upper triangle                                                                 
+%                                   Possible values: {'none', ''}                                                                         
+%                                   Default value  : 'none'                                                                               
+%                                   Input Data Type: string                                                                               
+%                                                                                                                                         
+% .......| UT_ColorLimits:          Color/Y-axis scaling limits for upper triangle                                                        
+%                                   If [min max], scale by [min max]. If scalar, and all(Conn>0), limits are set to [0 maxprc]. If        
+%                                   scalar, and any(Conn<0), limits are set to [-maxprc maxprc] where maxprc is                           
+%                                   prctile(abs(Conn),scalar)                                                                             
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 100                                                                                  
+%                                   Input Data Type: real number (double)                                                                 
+%                                                                                                                                         
+% .......| LowerTriangle:           Estimator to render on upper triangle                                                                 
+%                                   Possible values: {'none', ''}                                                                         
+%                                   Default value  : 'none'                                                                               
+%                                   Input Data Type: string                                                                               
+%                                                                                                                                         
+% .......| LT_ColorLimits:          Color/Y-axis scaling limits for lower triangle                                                        
+%                                   If [min max], scale by [min max]. If scalar, and all(Conn>0), limits are set to [0 maxprc]. If        
+%                                   scalar, and any(Conn<0), limits are set to [-maxprc maxprc] where maxprc is                           
+%                                   prctile(abs(Conn),scalar)                                                                             
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 100                                                                                  
+%                                   Input Data Type: real number (double)                                                                 
+%                                                                                                                                         
+% .......| Diagonal:                Estimator to render on diagonal                                                                       
+%                                   Possible values: {'none', ''}                                                                         
+%                                   Default value  : 'none'                                                                               
+%                                   Input Data Type: string                                                                               
+%                                                                                                                                         
+% .......| D_ColorLimits:           Color/Y-axis scaling limits for diagonal                                                              
+%                                   If [min max], scale by [min max]. If scalar, and all(Conn>0), limits are set to [0 maxprc]. If        
+%                                   scalar, and any(Conn<0), limits are set to [-maxprc maxprc] where maxprc is                           
+%                                   prctile(abs(Conn),scalar)                                                                             
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 100                                                                                  
+%                                   Input Data Type: real number (double)                                                                 
+%                                                                                                                                         
+% .......| AllColorLimits:          Color/Y-axis scaling limits for all subplots                                                          
+%                                   If set, overrides all other colorlimits options. If [min max], scale by [min max]. If scalar, and     
+%                                   all(Conn>0), limits are set to [0 maxprc]. If scalar, and any(Conn<0), limits are set to [-maxprc     
+%                                   maxprc] where maxprc is prctile(abs(Conn),scalar)                                                     
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 'n/a'                                                                                
+%                                   Input Data Type: real number (double)                                                                 
+%                                                                                                                                         
+% ...| ColorLimits:                 Color/Y-axis scaling limits                                                                           
+%                                   If [min max], scale by [min max]. If scalar, and all(Conn>0), limits are set to [0 maxprc]. If        
+%                                   scalar, and any(Conn<0), limits are set to [-maxprc maxprc] where maxprc is                           
+%                                   prctile(abs(Conn),scalar)                                                                             
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 100                                                                                  
+%                                   Input Data Type: real number (double)                                                                 
+%                                                                                                                                         
+% ...| TimesToPlot:                 [Min Max] Time range to image (sec)                                                                   
+%                                   Leave blank to use all timewindows                                                                    
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 'n/a'                                                                                
+%                                   Input Data Type: real number (double)                                                                 
+%                                                                                                                                         
+% ...| FrequenciesToPlot:           Vector of frequencies (Hz) to image                                                                   
+%                                   Leave blank to use all frequencies                                                                    
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 'n/a'                                                                                
+%                                   Input Data Type: any evaluable Matlab expression.                                                     
+%                                                                                                                                         
+% ...| TimeWindowsToPlot:           Time window centers (sec)                                                                             
+%                                   If a vector of times, will plot a separate curve for each specified time                              
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 'n/a'                                                                                
+%                                   Input Data Type: real number (double)                                                                 
+%                                                                                                                                         
+% [+] PlotContour:                  Plot contours around significant regions                                                              
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 'n/a'                                                                                
+%                                   Input Data Type: boolean                                                                              
+%                                                                                                                                         
+% .......| ContourColor:            Contour Color                                                                                         
+%                                   Can use any allowable Matlab color specification (see 'help ColorSpec').                              
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : [0 0 0]                                                                              
+%                                   Input Data Type: any evaluable Matlab expression.                                                     
+%                                                                                                                                         
+% [+] Thresholding:                 Thresholding options                                                                                  
+%                                   You can choose to use statistics (passed in as 'stats' structure), or simple percentile or absolute   
+%                                   thresholds.                                                                                           
+%                                   Possible values: {'None', 'Statistics', 'Simple'}                                                     
+%                                   Default value  : 'None'                                                                               
+%                                   Input Data Type: string                                                                               
+% ....[+] None:                                                                                                                                                                                                                                                              
+% ....[+] Statistics:                                                                                                                     
+%                                                                                                                                         
+% .......| PlotConfidenceIntervals: Plot confidence intervals (if available)                                                              
+%                                   Does not apply to for time-frequency images.                                                          
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : logical(false)                                                                       
+%                                   Input Data Type: boolean                                                                              
+%                                                                                                                                         
+% .......| ThresholdingMethod:      Method to use for significance masking                                                                
+%                                   Possible values: {'none'}                                                                             
+%                                   Default value  : 'none'                                                                               
+%                                   Input Data Type: string                                                                               
+%                                                                                                                                         
+% .......| AlphaSignificance:       P-value threshold for significance. e.g., 0.05 for p<0.05                                             
+%                                   Possible values: [0 1]                                                                                
+%                                   Default value  : 0.05                                                                                 
+%                                   Input Data Type: real number (double)                                                                 
+% ....[+] Simple:                                                                                                                         
+%                                                                                                                                         
+% .......| PercentileThreshold:     Percentile threshold                                                                                  
+%                                   If of form [percentile, dimension], percentile is applied elementwise across the specified            
+%                                   dimension.                                                                                            
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 0                                                                                    
+%                                   Input Data Type: real number (double)                                                                 
+%                                                                                                                                         
+% .......| AbsoluteThreshold:       Exact threshold                                                                                       
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 'n/a'                                                                                
+%                                   Input Data Type: real number (double)                                                                 
+%                                                                                                                                         
+% ...| Baseline:                    Time range of baseline [Min Max] (sec)                                                                
+%                                   Will subtract baseline from each point. Leave blank for no baseline.                                  
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 'n/a'                                                                                
+%                                   Input Data Type: real number (double)                                                                 
+%                                                                                                                                         
+% ...| FigureHandles:               Vector of figure handles to superimpose new graph onto                                                
+%                                   New figures and grid will *not* be created. Old grid will be used and new subplots overlaid           
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 'n/a'                                                                                
+%                                   Input Data Type: real number (double)                                                                 
+%                                                                                                                                         
+% ...| Smooth2D:                    Smooth time-freq image                                                                                
+%                                   This will apply nearest-neighbor interpolation.                                                       
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : logical(false)                                                                       
+%                                   Input Data Type: boolean                                                                              
+%                                                                                                                                         
+% ...| XTickLabels:                 Labels for X-Tickmarks                                                                                
+%                                   Must equal number of time windows                                                                     
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 'n/a'                                                                                
+%                                   Input Data Type: real number (double)                                                                 
+%                                                                                                                                         
+% ...| YTickLabels:                 Labels for Y-Tickmarks                                                                                
+%                                   Must equal number of time windows                                                                     
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 'n/a'                                                                                
+%                                   Input Data Type: real number (double)                                                                 
+%                                                                                                                                         
+% ...| VariablesToKeep:             List of indices of channels to keep                                                                   
+%                                   Can be [vector], a subset of [1:nbchan]                                                               
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 'n/a'                                                                                
+%                                   Input Data Type: real number (double)                                                                 
+%                                                                                                                                         
+% ...| PlottingOrder:               Specify index order                                                                                   
+%                                   Subset of [1:nbchan] in which to arrange columns/rows. Useful for grouping channels.                  
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 'n/a'                                                                                
+%                                   Input Data Type: real number (double)                                                                 
+%                                                                                                                                         
+% ...| SourceMarginPlot:            What to plot on margins                                                                               
+%                                   Options: 'Topoplot': plot source scalp projection. 'Dipole': plot dipole                              
+%                                   Possible values: {'none', 'topoplot', 'dipole', 'customtopo'}                                         
+%                                   Default value  : 'customtopo'                                                                         
+%                                   Input Data Type: string                                                                               
+%                                                                                                                                         
+% ...| TopoplotOptions:             Additional options (name,value) for topoplot                                                          
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 'n/a'                                                                                
+%                                   Input Data Type: cell array of strings (cellstr)                                                      
+%                                                                                                                                         
+% ...| CustomTopoMatrix:            Custom topoplot matrix                                                                                
+%                                   For N channels/sources, this is a 1 X N cell array of symmetric matrices comprised the topoplot       
+%                                   *surface* (not a component vector) for each channel/source. This is provided as input to              
+%                                   toporeplot() if 'SourceMarginPlot' is chosen to be 'customtopo'.                                      
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 'n/a'                                                                                
+%                                   Input Data Type: real number (double)                                                                 
+%                                                                                                                                         
+% [+] DipolePlottingOptions:        Options for dipole plotting                                                                           
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 'n/a'                                                                                
+%                                   Input Data Type: string                                                                               
+%                                                                                                                                         
+% .......| mri:                     Dipplot MRI structure                                                                                 
+%                                   Can be the name of matlab variable (in the base workspace) containing MRI structure. May also be a    
+%                                   path to a Matlab file containing MRI structure. Default uses MNI brain.                               
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 'n/a'                                                                                
+%                                   Input Data Type: string                                                                               
+%                                                                                                                                         
+% .......| DipoleCoordinateFormat:  Coordinate format for dipplot                                                                         
+%                                   Possible values: {'spherical', 'mni'}                                                                 
+%                                   Default value  : 'mni'                                                                                
+%                                   Input Data Type: string                                                                               
+%                                                                                                                                         
+% .......| ShowCortexMesh:          Show cortex surface instead of MRI volume                                                             
+%                                   Only valid if EEG.dipfit.surfmesh and EEG.dipfit.reducedMesh are present. These are structures        
+%                                   containing fields .faces and .vertices                                                                
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : logical(false)                                                                       
+%                                   Input Data Type: boolean                                                                              
+%                                                                                                                                         
+% .......| ColorROIs:               Color ROIs                                                                                            
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : logical(false)                                                                       
+%                                   Input Data Type: boolean                                                                              
+%                                                                                                                                         
+% .......| DipoleSize:              Dipole sphere size                                                                                    
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 80                                                                                   
+%                                   Input Data Type: real number (double)                                                                 
+%                                                                                                                                         
+% .......| DipplotOptions:          Additional dipplot options                                                                            
+%                                   Cell array of <'name',value> pairs of additional options for dipplot (see 'doc dipplot')              
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : '{}'                                                                                 
+%                                   Input Data Type: any evaluable Matlab expression.                                                     
+%                                                                                                                                         
+% .......| row_view:                View angle for row marginals                                                                          
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : [1 0 0]                                                                              
+%                                   Input Data Type: real number (double)                                                                 
+%                                                                                                                                         
+% .......| col_view:                View angle for column marginals                                                                       
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : [0 0 1]                                                                              
+%                                   Input Data Type: real number (double)                                                                 
+%                                                                                                                                         
+% ...| NodeLabels:                  List of labels for each node. e.g., {'Node1','Node2',...}                                             
+%                                   Leave blank to use defaults.                                                                          
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 'n/a'                                                                                
+%                                   Input Data Type: any evaluable Matlab expression.                                                     
+%                                                                                                                                         
+% ...| FrequencyMarkers:            Vector of frequencies (Hz) at which to draw horizontal lines                                          
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 'n/a'                                                                                
+%                                   Input Data Type: real number (double)                                                                 
+%                                                                                                                                         
+% ...| FrequencyMarkerColor:        Coloring for frequency markers                                                                        
+%                                   If an [1 x 3] array of RBG values, then color all lines using this color. If an [N x 3] matrix of     
+%                                   RBG values, then color the kth line with the colorspec from the kth row. If empty then cycle          
+%                                   through colorlist                                                                                     
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 'n/a'                                                                                
+%                                   Input Data Type: real number (double)                                                                 
+%                                                                                                                                         
+% ...| EventMarkers:                Event marker time and style                                                                           
+%                                   Specify event markers with a cell array of {time linecolor linestyle linewidth} cell arrays. Ex. {    
+%                                   { 0.2 'y' ':' 2} { 1.5 'r' ':' 2}} will render two dotted-line event makers, yellow at 200 ms and     
+%                                   red at 1500 ms                                                                                        
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : {{0, 'r', ':', 2}}                                                                   
+%                                   Input Data Type: any evaluable Matlab expression.                                                     
+%                                                                                                                                         
+% ...| FrequencyScale:              Make the y-scale logarithmic or linear                                                                
+%                                   Possible values: {'linear', 'log'}                                                                    
+%                                   Default value  : 'linear'                                                                             
+%                                   Input Data Type: string                                                                               
+%                                                                                                                                         
+% ...| Transform:                   transform the data (logarithmically or other)                                                         
+%                                   Possible values: {'log', 'linear', ''}                                                                
+%                                   Default value  : 'linear'                                                                             
+%                                   Input Data Type: string                                                                               
+%                                                                                                                                         
+% ...| YTickLabelLoc:               Y-tick label location                                                                                 
+%                                   Possible values: {'left', 'right', 'both'}                                                            
+%                                   Default value  : 'right'                                                                              
+%                                   Input Data Type: string                                                                               
+%                                                                                                                                         
+% ...| TitleString:                 Figure title string                                                                                   
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 'n/a'                                                                                
+%                                   Input Data Type: string                                                                               
+%                                                                                                                                         
+% ...| TitleFontSize:               Title Font Size                                                                                       
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 12                                                                                   
+%                                   Input Data Type: real number (double)                                                                 
+%                                                                                                                                         
+% ...| AxesFontSize:                Axes Font Size                                                                                        
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 11                                                                                   
+%                                   Input Data Type: real number (double)                                                                 
+%                                                                                                                                         
+% ...| TextColor:                   Text color                                                                                            
+%                                   See 'doc ColorSpec'.                                                                                  
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : [1 1 1]                                                                              
+%                                   Input Data Type: any evaluable Matlab expression.                                                     
+%                                                                                                                                         
+% ...| LineColor:                   Linecolor for lineplots                                                                               
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : [1 1 1]                                                                              
+%                                   Input Data Type: real number (double)                                                                 
+%                                                                                                                                         
+% ...| PatchColor:                  FaceColor for shaded regions                                                                          
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : [1 1 1]                                                                              
+%                                   Input Data Type: real number (double)                                                                 
+%                                                                                                                                         
+% ...| Colormap:                    Colormap                                                                                              
+%                                   Matlab expression denoting colormap to use (e.g., 'jet(64)'). See 'help colormap'.                    
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : 'jet(300)'                                                                           
+%                                   Input Data Type: any evaluable Matlab expression.                                                     
+%                                                                                                                                         
+% ...| BackgroundColor:             Background Color                                                                                      
+%                                   See 'doc ColorSpec'.                                                                                  
+%                                   Possible values: 'Unrestricted'                                                                       
+%                                   Default value  : [0 0 0]                                                                              
+%                                   Input Data Type: any evaluable Matlab expression.                                                     
+%                                                                                                                                         
+% ...| TFCellColorScheme:           Color scheme for TimeFreqCell popout                                                                  
+%                                   Possible values: {'black', 'white', 'eeglab'}                                                         
+%                                   Default value  : 'black'                                                                              
+%                                   Input Data Type: string  
 %
-% Inputs:
-%
-%       ALLEEG:     Array of EEGLAB datasets
-%       Conn:       SIFT Connectivity Structure
-%
-% Optional:
-%
-%     Stats:                          A structure containing statistics.
-%                                     Input Data Type: structure
-%
-%     VisualizationMode:              Visualization Modes
-%                                     Create Time-Frequency imageplots, Causality x Frequency plots (collapsing across time), Causality x
-%                                     Time plots (collapsing across frequency)
-%                                     Possible values: {'TimeXFrequency','TimeXCausality','FrequencyXCausality'}
-%                                     Default value  : 'TimeXFrequency'
-%                                     Input Data Type: string
-%
-%     MatrixLayout:                   Select the measure and layout
-%                                     Possible values: {'Full','Partial'}
-%                                     Default value  : 'Full'
-%                                     Input Data Type: string
-%     -------------
-%
-%         UpperTriangle:              Estimator to render on upper triangle
-%                                     Possible values: {'none',''}
-%                                     Default value  : 'n/a'
-%                                     Input Data Type: string
-%
-%         LowerTriangle:              Estimator to render on upper triangle
-%                                     Possible values: {'none',''}
-%                                     Default value  : 'n/a'
-%                                     Input Data Type: string
-%
-%         Diagonal:                   Estimator to render on diagonal
-%                                     Possible values: {'none',''}
-%                                     Default value  : 'n/a'
-%                                     Input Data Type: string
-%
-%         Estimator:                  Estimator to visualize
-%                                     Possible values: {''}
-%                                     Default value  : 'n/a'
-%                                     Input Data Type: string
-%
-%     ColorLimits:                    Color/Y-axis scaling limits
-%                                     If [min max], scale by [min max]. If scalar, and all(Conn>0), limits are set to [0 maxprc]. If
-%                                     scalar, and any(Conn<0), limits are set to [-maxprc maxprc] where maxprc is
-%                                     prctile(abs(Conn),scalar)
-%                                     Input Data Type: real number (double)
-%
-%     TimesToPlot:                    [Min Max] Time range to image (sec)
-%                                     Leave blank to use all timewindows
-%                                     Input Data Type: real number (double)
-%
-%     FrequenciesToPlot:              Vector of frequencies (Hz) to image
-%                                     Leave blank to use all frequencies
-%                                     Input Data Type: any evaluable Matlab expression.
-%
-%     TimeWindowsToPlot:              Time window centers (sec)
-%                                     If a vector of times, will plot a separate curve for each specified time
-%                                     Input Data Type: real number (double)
-%
-%     LineColor:                      Color of line for single-window plots
-%                                     Input Data Type: real number (double)
-%
-%     PlotConfidenceIntervals:        Plot confidence intervals (if available)
-%                                     Does not apply to for time-frequency images.
-%                                     Input Data Type: boolean
-%
-%     PlotContour:                    Plot contours around significant regions
-%                                     Input Data Type: boolean
-%     ------------
-%
-%         ContourColor:               Contour Color
-%                                     Can use any allowable Matlab color specification (see 'help ColorSpec').
-%                                     Input Data Type: any evaluable Matlab expression.
-%
-%     Thresholding:                   Thresholding options
-%                                     You can choose to use statistics (passed in as 'stats' structure), or simple percentile or absolute
-%                                     thresholds.
-%                                     Possible values: {'None','Statistics','Simple'}
-%                                     Default value  : 'None'
-%                                     Input Data Type: string
-%     -------------
-%
-%         AlphaSignificance:          P-value threshold for significance. e.g., 0.05 for p<0.05
-%                                     Input Range  : [0  1]
-%                                     Default value: 0.05
-%                                     Input Data Type: real number (double)
-%
-%         PercentileThreshold:        Percentile threshold
-%                                     If of form [percentile, dimension], percentile is applied elementwise across the specified
-%                                     dimension.
-%                                     Input Data Type: real number (double)
-%
-%         AbsoluteThreshold:          Exact threshold
-%                                     Input Data Type: real number (double)
-%
-%     Baseline:                       Time range of baseline [Min Max] (sec)
-%                                     Will subtract baseline from each point. Leave blank for no baseline.
-%                                     Input Data Type: real number (double)
-%
-%     FigureHandles:                  Vector of figure handles to superimpose new graph onto
-%                                     New figures and grid will *not* be created. Old grid will be used and new subplots overlaid
-%                                     Input Data Type: real number (double)
-%
-%     Smooth2D:                       Smooth time-freq image
-%                                     This will apply nearest-neighbor interpolation.
-%                                     Input Data Type: boolean
-%
-%     XTickLabels:                    Labels for X-Tickmarks
-%                                     Must equal number of time windows
-%                                     Input Data Type: real number (double)
-%
-%     YTickLabels:                    Labels for Y-Tickmarks
-%                                     Must equal number of time windows
-%                                     Input Data Type: real number (double)
-%
-%     PlottingOrder:                  Specify index order
-%                                     Subset of [1:nbchan] in which to arrange columns/rows. Useful for grouping channels.
-%                                     Input Data Type: real number (double)
-%
-%     SourceMarginPlot:               What to plot on margins
-%                                     Options: 'Topoplot': plot source scalp projection. 'Dipole': plot dipole
-%                                     Possible values: {'none','topoplot','dipole'}
-%                                     Default value  : 'dipole'
-%                                     Input Data Type: string
-%
-%     DipolePlottingOptions:          Options for dipole plotting
-%                                     Input Data Type: string
-%     ----------------------
-%
-%         mri:                        Dipplot MRI structure
-%                                     Can be the name of matlab variable (in the base workspace) containing MRI structure. May also be a
-%                                     path to a Matlab file containing MRI structure. Default uses MNI brain.
-%                                     Input Data Type: string
-%
-%         DipoleCoordinateFormat:     Coordinate format for dipplot
-%                                     Possible values: {'spherical','mni'}
-%                                     Default value  : 'mni'
-%                                     Input Data Type: string
-%
-%         DipplotOptions:             Additional dipplot options
-%                                     Cell array of <'name',value> pairs of additional options for dipplot (see 'doc dipplot')
-%                                     Input Data Type: any evaluable Matlab expression.
-%
-%     NodeLabels:                     List of labels for each node. e.g., {'Node1','Node2',...}
-%                                     Leave blank to use defaults.
-%                                     Input Data Type: any evaluable Matlab expression.
-%
-%     FrequencyMarkers:               Vector of frequencies (Hz) at which to draw horizontal lines
-%                                     Input Data Type: real number (double)
-%
-%     FrequencyMarkerColor:           Coloring for frequency markers
-%                                     If an [1 x 3] array of RBG values, then color all lines using this color. If an [N x 3] matrix of
-%                                     RBG values, then color the kth line with the colorspec from the kth row. If empty then cycle
-%                                     through colorlist
-%                                     Input Data Type: real number (double)
-%
-%     ClusterMaps:                    Cell matrix of mean cluster maps to topoplot
-%                                     Input Data Type: real number (double)
-%
-%     EventMarkers:                   Event marker time and style
-%                                     Specify event markers with a cell array of {time linecolor linestyle linewidth} cell arrays. Ex. {
-%                                     { 0.2 'y' ':' 2} { 1.5 'r' ':' 2}} will render two dotted-line event makers, yellow at 200 ms and
-%                                     red at 1500 ms
-%                                     Input Data Type: any evaluable Matlab expression.
-%
-%     FrequencyScale:                 Make the y-scale logarithmic or linear
-%                                     Possible values: {'linear','log'}
-%                                     Default value  : 'linear'
-%                                     Input Data Type: string
-%
-%     Transform:                      transform the data (logarithmically or other)
-%                                     Possible values: {'log','linear',''}
-%                                     Default value  : 'n/a'
-%                                     Input Data Type: string
-%
-%     TitleString:                    Figure title string
-%                                     Input Data Type: string
-%
-%     TitleFontSize:                  Title Font Size
-%                                     Input Data Type: real number (double)
-%
-%     AxesFontSize:                   Axes Font Size
-%                                     Input Data Type: real number (double)
-%
-%     TextColor:                      Text color
-%                                     See 'doc ColorSpec'.
-%                                     Input Data Type: any evaluable Matlab expression.
-%
-%     Colormap:                       Colormap
-%                                     Matlab expression denoting colormap to use (e.g., 'jet(64)'). See 'help colormap'.
-%                                     Input Data Type: any evaluable Matlab expression.
-%
-%     BackgroundColor:                Background Color
-%                                     See 'doc ColorSpec'.
-%                                     Input Data Type: any evaluable Matlab
-%                                     expression.
-%
-% Outputs:
+% ----------------------------------------------------------------------------------------------------------------------------------------
+% Output                             Information                                                                                           
+% ----------------------------------------------------------------------------------------------------------------------------------------                                                                                                                                   
 %
 %       figureHandles:                Handles to figures.
 %
@@ -245,8 +434,8 @@ figureHandles = [];
 
 % extract some stuff from inputs for arg defaults
 Conn = arg_extract(varargin,'Conn',2);
-numConds = length(Conn);
-if ~isempty(Conn)
+
+if ~ischar(Conn) && ~isempty(Conn)
     Conn = Conn(1);
     ConnNames   = hlp_getConnMethodNames(Conn);
     conndef     = ConnNames{1};
@@ -265,7 +454,7 @@ end
 % get some defaults from ALLEEG
 ALLEEG = arg_extract(varargin,{'ALLEEG','EEG'},1);
 [MyComponentNames MyChannelNames] = deal([]);
-if ~isempty(ALLEEG)
+if ~ischar(ALLEEG) && ~isempty(ALLEEG)
     if isfield(ALLEEG(1).CAT,'curComponentNames') && ~isempty(ALLEEG(1).CAT.curComponentNames)
         MyComponentNames = ALLEEG(1).CAT.curComponentNames;
     else
@@ -337,6 +526,7 @@ if ~isempty(ALLEEG)
     end
     
 else
+    CondDiffOrderDefaults = {''};
     sourceMarginOptions = {'none','topoplot','dipole','customtopo'};
 end
 
@@ -368,15 +558,15 @@ end
 % setup the argument list
 % -----------------------------------------------------
 g = arg_define([0 2],varargin, ...
-    arg_norep({'ALLEEG','EEG'},mandatory),...
-    arg_norep({'Conn'},mandatory),...
+    arg_norep({'ALLEEG','EEG'},mandatory,[],'EEGLAB dataset(s). This is an array of at most two EEGLAB structures.','type','expression'),...
+    arg_norep({'Conn'},mandatory,[],'SIFT Conn object. This is typically stored in EEG.CAT.Conn','type','expression'),...
     arg_subtoggle({'plotCondDiff','PlotConditionDifference'},{}, ...
     {...
     arg({'condOrder','ConditionOrder'},CondDiffOrderDefaults{1},CondDiffOrderDefaults,'Order in which to take difference.') ...
     }, 'Plot difference between selected conditions','cat','DisplayProperties'), ...
-    arg_norep({'stats','Stats'},[],[],'A structure containing statistics.'), ...
-    arg_nogui({'vismode','VisualizationMode'},'TimeXFrequency',{'TimeXFrequency','TimeXCausality','FrequencyXCausality'},'Visualization Modes. Create Time-Frequency imageplots, Causality x Frequency plots (collapsing across time), Causality x Time plots (collapsing across frequency)'), ...
-    arg_norep({'msubset'},'all',{'tril','triu','diag','nodiag','all'},'Subset of the full matrix to keep. Lower/upper triangle (''tril''/''triu''), diagonals (''diag''), everything except diagonal (''nodiag''), everything (''all'').'), ...
+    arg_norep({'stats','Stats'},[],[],'A structure containing statistics.','type','expression'), ...
+    arg({'vismode','VisualizationMode'},'',{'','TimeXFrequency','TimeXCausality','FrequencyXCausality'},'Visualization Modes. Create Time-Frequency imageplots, Causality x Frequency plots (collapsing across time), Causality x Time plots (collapsing across frequency)'), ...
+    arg_nogui({'msubset'},'all',{'tril','triu','diag','nodiag','all'},'Subset of the full matrix to keep. Lower/upper triangle (''tril''/''triu''), diagonals (''diag''), everything except diagonal (''nodiag''), everything (''all'').'), ...
     arg_subswitch({'MatrixLayout'},'Full', ...
     {'Full', ...
     { ...
@@ -422,9 +612,11 @@ g = arg_define([0 2],varargin, ...
     arg({'baseline','Baseline'},[],[],'Time range of baseline [Min Max] (sec). Will subtract baseline from each point. Leave blank for no baseline.','shape','row','type','denserealdouble','cat','DataProcessing'), ...
     arg_nogui({'fighandles','FigureHandles'},[],[],'Vector of figure handles to superimpose new graph onto. New figures and grid will *not* be created. Old grid will be used and new subplots overlaid'), ...
     arg({'smooth','Smooth2D'},false,[],'Smooth time-freq image. This will apply nearest-neighbor interpolation.','cat','DataProcessing'), ...
-    arg_nogui({'xord','XTickLabels'},[],[],'Labels for X-Tickmarks. Must equal number of time windows','cat','DisplayProperties'), ...
-    arg_nogui({'yord','YTickLabels'},[],[],'Labels for Y-Tickmarks. Must equal number of time windows','cat','DisplayProperties'), ...
-    arg_norep({'channels','VariablesToKeep'},[],[],'List of indices of channels to keep. Can be [vector], a subset of [1:nbchan]'), ...
+    arg_nogui({'xord','XTickLabels'},[],[],'Labels for X-Tickmarks. Must equal number of time windows or XTickLoc','type','expression','cat','DisplayProperties'), ...
+    arg_nogui({'yord','YTickLabels'},[],[],'Labels for Y-Tickmarks. Must equal number of time windows or YTickLoc','type','expression','cat','DisplayProperties'), ...
+    arg_nogui({'xloc','XTickLoc'},[],[],'Locations for X-Tickmarks.','type','expression','cat','DisplayProperties'), ...
+    arg_nogui({'yloc','YTickLoc'},[],[],'Locations for Y-Tickmarks.','type','expression','cat','DisplayProperties'), ...
+    arg_norep({'channels','VariablesToKeep'},[],[],'*deprecated* List of indices of channels to keep. Can be [vector], a subset of [1:nbchan]'), ...
     arg({'plotorder','PlottingOrder'},[],[],'Specify index order. Subset of [1:nbchan] in which to arrange columns/rows. Useful for grouping channels.','cat','DisplayProperties'), ...
     arg({'topoplot','SourceMarginPlot'},sourceMarginOptions{end},sourceMarginOptions,'What to plot on margins. Options: ''Topoplot'': plot source scalp projection. ''Dipole'': plot dipole','cat','DisplayProperties'), ...
     arg_nogui({'topoplot_opts','TopoplotOptions'},{},[],'Additional options (name,value) for topoplot','type','cellstr'), ...    
@@ -433,14 +625,14 @@ g = arg_define([0 2],varargin, ...
     { ...
     arg_nogui({'mri'},'',[],'Dipplot MRI structure. Can be the name of matlab variable (in the base workspace) containing MRI structure. May also be a path to a Matlab file containing MRI structure. Default uses MNI brain.','type','char','shape','row'), ...
     arg({'coordformat','DipoleCoordinateFormat'},'mni',{'spherical','mni'},'Coordinate format for dipplot','type','char','shape','row'), ...
-    arg({'showCortexMesh','ShowCortexMesh'},isstruct(ALLEEG(1)) && ~isempty(ALLEEG(1).dipfit) && isfield(ALLEEG(1).dipfit.model,'meshVertices'),[],'Show cortex surface instead of MRI volume.'), ...
+    arg({'showCortexMesh','ShowCortexMesh'},isstruct(ALLEEG(1)) && ~isempty(ALLEEG(1).dipfit) && isfield(ALLEEG(1).dipfit.model,'meshVertices'),[],'Show cortex surface instead of MRI volume. Only valid if EEG.dipfit.surfmesh and EEG.dipfit.reducedMesh are present. These are structures containing fields .faces and .vertices'), ...
     arg({'colorROIs','ColorROIs'},isstruct(ALLEEG(1)) && isfield(ALLEEG(1).dipfit,'surfmesh'),[],'Color ROIs.'), ...
     arg({'dipsize','DipoleSize'},80,[],'Dipole sphere size'), ...
     arg_nogui({'dipplotopt','DipplotOptions'},'{}','','Additional dipplot options. Cell array of <''name'',value> pairs of additional options for dipplot (see ''doc dipplot'')','type','expression','shape','row') ...
     arg({'row_view'},[1 0 0],[],'View angle for row marginals'), ...
     arg({'col_view'},[0 0 1],[],'View angle for column marginals'), ...
     },'Options for dipole plotting'), ...
-    arg({'nodelabels','NodeLabels'},MyComponentNames,{},'List of labels for each node. e.g., {''Node1'',''Node2'',...}. Leave blank to use defaults.','shape','row','type','cellstr','cat','DisplayProperties'),...
+    arg({'nodelabels','NodeLabels'},MyComponentNames,[],'List of labels for each node. e.g., {''Node1'',''Node2'',...}. Leave blank to use defaults.','type','expression','cat','DisplayProperties'),...
     arg({'foilines','FrequencyMarkers'},[],[],'Vector of frequencies (Hz) at which to draw horizontal lines','cat','FrequencyMarkers'), ...
     arg({'foilinecolor','FrequencyMarkerColor'},[],[],'Coloring for frequency markers. If an [1 x 3] array of RBG values, then color all lines using this color. If an [N x 3] matrix of RBG values, then color the kth line with the colorspec from the kth row. If empty then cycle through colorlist','shape','matrix','cat','FrequencyMarkers'), ...
     arg({'events','EventMarkers'},{{0 'r' ':' 2}},[],'Event marker time and style. Specify event markers with a cell array of {time linecolor linestyle linewidth} cell arrays. Ex. { { 0.2 ''y'' '':'' 2} { 1.5 ''r'' '':'' 2}} will render two dotted-line event makers, yellow at 200 ms and red at 1500 ms','type','expression','shape','row','cat','DisplayProperties'), ...
@@ -461,7 +653,6 @@ g = arg_define([0 2],varargin, ...
 
 %     arg_sub({'subplotargs','SubplotExpansionProperties'},[],@vis_TimeFreqCell,'Additional arguments for subplot callback function.','cat','SubplotExpansion'), ...
 
-
 % Commit ALLEEG and Conn variables to workspace
 [data g] = hlp_splitstruct(g,{'ALLEEG','Conn'});
 arg_toworkspace(data);
@@ -472,10 +663,12 @@ gridmargin_bot_left  = [0.1 0.1];     % [0.05 0.05];     % margin (normalized un
 gridmargin_top_right =  1-gridmargin_bot_left;
 pmargin     = 0.005;                            % margin between subplots
 OFFSET      = 0; 0.05;
-colorlist   = {'k','g','b','c','m','y','r'};    % list of colors for sequential overlapping plots of different time windows
+colorlist   = distinguishable_colors(20,g.backgroundColor);    % list of colors for sequential overlapping plots of different time or freq windows
+colorlist   = mat2cell(colorlist,ones(1,size(colorlist,1)),3);
 StatsMatrix = [];
 TwoSidedThresholding = false;
-GridType = '';
+GridType = g.vismode;
+g.plotorder = g.plotorder(:)';
 
 % handle plotting multiple estimators on the grid
 switch lower(g.MatrixLayout.arg_selection)
@@ -643,7 +836,6 @@ end
 if ~isfield(Conn(1),'erWinCenterTimes') || isempty(Conn(1).erWinCenterTimes)
     error('Conn.erWinCenterTimes not found!'); end
 
-
 if isempty(g.channels)
     g.channels = 1:ALLEEG(1).CAT.nbchan; end
 
@@ -707,7 +899,8 @@ if strcmpi(g.topoplot,'dipole')
                         'BackgroundColor',BG_COLOR,'RoiColors',@(x)distinguishable_colors(x,[1 0 0; BG_COLOR]));
 
         else
-            MeshColorTable = [0.6 0.6 0.7];
+            nvert = size(ALLEEG(1).dipfit.surfmesh.vertices,1);
+            MeshColorTable = repmat([0.6 0.6 0.7],nvert,1);
         end
         g.dipplot.dipplotopt = {'spheres',fastif(dipsize>0,'on','off'),'dipolesize' dipsize ...
                                 'projlines' 'off' 'hidemri','on',   ...
@@ -805,8 +998,8 @@ end
 
 
 % specify new x- and y-axes (TODO: remove this)
-if ~isempty(g.xord), erWinCenterTimes = g.xord; end
-if ~isempty(g.yord), freqValues = g.yord; end
+% if ~isempty(g.xord), erWinCenterTimes = g.xord; end
+% if ~isempty(g.yord), freqValues = g.yord; end
 
 
 
@@ -848,7 +1041,7 @@ g.titleString = sprintf('Subj %s. Cond %s. %s', ...
     condstring,g.titleString);
 if ~isempty(g.fighandles)
     % set focus to the selected figure
-    figureHandles(end+1)  = figure(g.fighandles);
+    figureHandles(end+1)  = figure(g.fighandles(1));
 else
     % create a new figure
     figureHandles(end+1)  = figure('units','normalized','visible','off');
@@ -1194,6 +1387,16 @@ end
 % backup frequency values for logimagesc
 origFreqValues = g.freqValues;
 
+if isempty(GridType)
+    if (ntime > 1 && nfreqs > 1 && isempty(g.windows))
+        GridType = 'TimeXFrequency';
+    elseif nfreqs > 1
+        GridType = 'FrequencyXCausality';
+    elseif ntime > 1
+        GridType = 'TimeXCausality';
+    end
+end
+
 % ---------------------------------
 % | Plot Information Flow
 % | column ch_j --> row ch_i
@@ -1218,9 +1421,9 @@ for ch_i=1:nch
         end
         if ch_j==1 && strcmpi(g.topoplot,'none')
             th = ylabel(g.nodelabels(i),'color',g.textColor,  ...
-                    'horizontalalignment','center','fontsize',g.axesFontSize, ...
-                    'verticalalignment','middle','edgecolor','none', ...
-                    'rotation',0);
+                'horizontalalignment','center','fontsize',g.axesFontSize, ...
+                'verticalalignment','middle','edgecolor','none', ...
+                'rotation',0);
         elseif ch_j==1 && ~strcmpi(g.topoplot,'none')
             lbltag = sprintf('row_ylabel_%d_%d',i,j);
             if isempty(findall(gcf,'tag',lbltag))
@@ -1241,12 +1444,12 @@ for ch_i=1:nch
                 
             % if we get here, then we don't want to actually image this cell
             set(gca,'color',get(gcf,'color'));
- 
+            
             % if this is the bottom-right most subplot, and this cell is empty
             % then borrow x-y ticks from left,upper neighbors
             if ch_i==nch && ch_j == nch && isempty(get(gca,'children'));
                 % get left neighbor
-%                 hlp_subplot1(sub2ind([numSubplotRows,numSubplotCols],nch,nch));
+                %                 hlp_subplot1(sub2ind([numSubplotRows,numSubplotCols],nch,nch));
                 curplot = gca;
                 leftplot=hlp_subplot1(sub2ind([numSubplotRows,numSubplotCols],(ch_j-1)+numSubplotRows-nch,ch_i+numSubplotCols-nch));
                 xticks = get(leftplot,'Xtick');
@@ -1258,403 +1461,431 @@ for ch_i=1:nch
                 ylim = get(upperplot,'YLim');
                 set(curplot,'XTick',xticks,'YTick',yticks,'XTickLabel',xticklabels,'YTickLabel',yticklabels,'XLim',xlim,'YLim',ylim);
             end
-
+            
             continue;
         end
         
-
-        if ntime > 1 && nfreqs > 1 && isempty(g.windows)
-            % ---------------------------------
-            % | Format is Time x Frequency
-            % ---------------------------------
         
-            GridType = 'TimeXFreq';
-            
-            C=squeeze(ConnMatrix(i,j,:,:));
-            
-            if g.smooth
-                h=pcolor(erWinCenterTimes,g.freqValues,double(C));
-                shading interp
-            else
-                if strcmpi(g.freqscale,'log')
-                    nomargin = isempty(get(gca,'YTickLabel'));
-                    [g.freqValues C h] = logimagesc(erWinCenterTimes,origFreqValues,C,'plot','on');
-                    %                     h = gco;
-                    if nomargin, set(gca,'YTickLabel',[],'YTick',[]); end
+        switch GridType
+            case 'TimeXFrequency'
+                % ---------------------------------
+                % | Format is Time x Frequency
+                % ---------------------------------
+                
+                GridType = 'TimeXFrequency';
+                
+                C=squeeze(ConnMatrix(i,j,:,:));
+                
+                if g.smooth
+                    h=pcolor(erWinCenterTimes,g.freqValues,double(C));
+                    shading interp
                 else
-                    h=imagesc(erWinCenterTimes,g.freqValues,C);
-                end
-            end
-            
-            set(gca,'Clim',clim,'YDir','normal');
-            
-            % extract the stats matrix for this pair
-            if isequal(size(StatsMatrix),size(ConnMatrix))
-                Sji = squeeze(StatsMatrix(i,j,:,:));
-                Sij = squeeze(StatsMatrix(j,i,:,:));
-            elseif size(StatsMatrix,1)==2 && ndims(StatsMatrix)==5
-                Sji = permute(squeeze(squeeze(StatsMatrix(:,i,j,:,:))),[2 3 1]);
-                Sij = permute(squeeze(squeeze(StatsMatrix(:,j,i,:,:))),[2 3 1]);
-            else
-                Sji = StatsMatrix;
-                Sij = StatsMatrix;
-            end
-            
-            % Plot contour
-            if g.pcontour.arg_selection
-                if isscalar(Sji) && any(C(:)-C(1))
-                    % use contour for constant threshold
-                    hold on;
-                    contour(erWinCenterTimes,g.freqValues,C,[Sji Sji], ...
-                        'color',g.pcontour.contourcolor);
-                    hold off
-                elseif length(Sji)==2 && any(C(:)-C(1))
-                    hold on;
-                    contour(erWinCenterTimes,g.freqValues,C,Sji, ...
-                        'color',g.pcontour.contourcolor);
-                    hold off
-                end
-            end
-            
-            
-            
-            % Prepare the arguments for vis_TimeFreqCell()
-            % This function will be called when user clicks on subplot
-            if strcmpi(g.topoplot,'topoplot')
-                subargs.topovec     = squeeze(ALLEEG(1).icawinv(:,ALLEEG(1).CAT.curComps([j i])))';
-            elseif strcmpi(g.topoplot,'customtopo')
-                subargs.customTopoMatrix = g.customTopoMatrix([j i]);
-            else
-                subargs.topovec = [];
-                subargs.customTopoMatrix = {};
-            end
-            
-            if ~isempty(ALLEEG(1).dipfit) && isfield(ALLEEG(1).dipfit,'model')
-                subargs.dipfitstruct = ALLEEG(1).dipfit;
-                subargs.dipfitstruct.model = subargs.dipfitstruct.model(ALLEEG(1).CAT.curComps([j i]));
-            else
-                subargs.dipfitstruct = [];
-            end
-            subargs.elocs       = ALLEEG(1).chanlocs;
-            subargs.chaninfo    = ALLEEG(1).chaninfo;
-            subargs.alltimes    = erWinCenterTimes;
-            subargs.allfreqs    = origFreqValues;
-            
-            if ~isempty(Sji)
-                subargs.StatsMatrix(1,:,:,:,:) = Sji;
-                subargs.StatsMatrix(2,:,:,:,:) = Sij;
-            else
-                subargs.StatsMatrix = [];
-            end
-            
-            subargs.ConnMatrix(1,:,:)  = squeeze(OrigConnMatrix(i,j,:,:));
-            subargs.ConnMatrix(2,:,:)  = squeeze(OrigConnMatrix(j,i,:,:));
-            subargs.baseline    = g.baseline;
-            subargs.freqscale   = g.freqscale;
-            subargs.events      = g.events;
-            subargs.topoplot    = g.topoplot;
-            subargs.topoplot_opts = g.topoplot_opts;
-            subargs.titleString = g.titleString;
-            subargs.titleFontSize   = g.titleFontSize;
-            subargs.axesFontSize    = g.axesFontSize;
-            subargs.textColor       = g.textColor;
-            subargs.backgroundColor = g.backgroundColor;
-            subargs.clim            = clim;
-            subargs.thresholding    = g.thresholding;
-            subargs.bidir           = fastif(i==j,false,true);
-            subargs.connmethod      = CEstimator;
-            subargs.nodelabels      = g.nodelabels([j i]);
-            subargs.dipplot         = g.dipplot;
-            subargs.foilines        = g.foilines;
-            subargs.foilinecolor    = g.foilinecolor;
-            subargs.smooth          = g.smooth;
-            subargs.colorscheme     = g.colorscheme;
-            
-            set(gca,'userdata',subargs)
-            set([gca h],'buttondownfcn','vis_TimeFreqCell(get(gca,''UserData''));');
-            %             set([gca h],'tooltip',sprintf('%s --> %s. Click to expand',g.nodelabels{j},g.nodelabels{i}));
-            
-            set(gca,'Xlim',[erWinCenterTimes(1)+OFFSET erWinCenterTimes(end)-OFFSET]);
-            % [erWinCenterTimes(1)-winlen/(2*ALLEEG(1).srate) erWinCenterTimes(end)+winlen/(2*ALLEEG(1).srate)]
-            set(gca,'Ylim',g.freqValues([1 end]));
-            
-            set(gca,'XColor',g.textColor,'YColor',g.textColor);
-            set(gca,'fontsize',g.axesFontSize);
-            
-            
-            % draw event markers
-            if ~isempty(g.events)
-                for i=1:length(g.events)
-                    events = g.events{i};
-                    
-                    % set defaults
-                    if length(events) < 4
-                        events{4} = 2;      end
-                    if length(events) < 3
-                        events{3} = ':';    end
-                    if length(events) < 2
-                        events{2} = 'r';     end
-                    
-                    vl = vline(events{1});
-                    set(vl,'color',events{2},'linestyle',events{3},'linewidth',events{4});
-                end
-            end
-            
-            % draw horizontal lines at frequencies of interest
-            if ~isempty(g.foilines)
-                for ln=1:length(g.foilines)
-                    hl = hline(g.foilines(ln));
-                    if isempty(g.foilinecolor)
-                        color = colorlist{mod(ln-1,length(colorlist))+1};
-                    elseif size(g.foilinecolor,1) > 1
-                        color = g.foilinecolor(ln,:);
-                    elseif size(g.foilinecolor,1) == 1
-                        color = g.foilinecolor;
-                    end
-                    
-                    
-                    set(hl,'color',color,'linestyle','-','linewidth',1);
-                    set(hl,'tag','foilines');
-                end
-            end
-            
-            % create a red border around diagonal plots
-            if ch_i==ch_j
-                %                 hlp_subplot1(sub2ind([numSubplotRows,numSubplotCols],ch_j+numSubplotRows-nch,ch_i+numSubplotCols-nch));
-                pos = get(gca,'position');
-                hborder = annotation('rectangle',pos,'edgecolor',[1 0 0],'linewidth',2);
-                set(hborder,'userdata',gca);
-                set(hborder,'buttondownfcn','vis_TimeFreqCell(get(get(gco,''UserData''),''UserData''));');
-            end
-            
-            
-        elseif nfreqs > 1
-            % ---------------------------------
-            % | Format is Causality x Frequency
-            % ---------------------------------
-            
-            GridType = 'CausalityXFreq';
-            
-            if isequal(size(StatsMatrix),size(ConnMatrix))
-                S = squeeze(StatsMatrix(i,j,:,:));
-            else
-                S = StatsMatrix;
-            end
-            
-            hold on
-            for tt=1:ntime
-                % plot a set of causality x frequency traces for each time window
-                
-                % plot confidence intervals
-                if willPlotStatCI(g,CEstimator)
-                    ci = g.stats.(CEstimator).ci;
-                    if ndims(ci)>=4 && size(ci,1)==2
-                        % asymmetric confidence intervals
-                        ciplot(squeeze(ci(1,i,j,:,tt)),squeeze(ci(2,i,j,:,tt)),g.freqValues,[0.7 0.7 0.7],0,'Ylim',clim,'FaceAlpha',0.5,'EdgeColor',[0.2 0.2 0.2]);
+                    if strcmpi(g.freqscale,'log')
+                        nomargin = isempty(get(gca,'YTickLabel'));
+                        [g.freqValues C h] = logimagesc(erWinCenterTimes,origFreqValues,C,'plot','on');
+                        %                     h = gco;
+                        if nomargin, set(gca,'YTickLabel',[],'YTick',[]); end
                     else
-                        % symmetric confidence intervals (about zero)
-                        ciplot(-squeeze(ci(i,j,:,tt)),squeeze(ci(i,j,:,tt)),g.freqValues,[0.7 0.7 0.7],1,'FaceAlpha',0.5,'EdgeColor',[0.2 0.2 0.2]);
+                        h=imagesc(erWinCenterTimes,g.freqValues,C);
                     end
                 end
                 
-                if strcmpi(g.thresholding.arg_selection,'statistics') ...
-                        && strcmpi(g.thresholding.sigthreshmethod,'thresh')
-                    % plot statistical thresholds
-                    if ~isempty(S)
-                        if isscalar(S)
-                            % constant threshold
-                            plot(g.freqValues,S(ones(1,length(g.freqValues))),'r:');
-                        elseif isvector(S)
-                            % variable threshold
-                            plot(g.freqValues,S,'r:');
+                set(gca,'Clim',clim,'YDir','normal');
+                
+                % extract the stats matrix for this pair
+                if isequal(size(StatsMatrix),size(ConnMatrix))
+                    Sji = squeeze(StatsMatrix(i,j,:,:));
+                    Sij = squeeze(StatsMatrix(j,i,:,:));
+                elseif size(StatsMatrix,1)==2 && ndims(StatsMatrix)==5
+                    Sji = permute(squeeze(squeeze(StatsMatrix(:,i,j,:,:))),[2 3 1]);
+                    Sij = permute(squeeze(squeeze(StatsMatrix(:,j,i,:,:))),[2 3 1]);
+                else
+                    Sji = StatsMatrix;
+                    Sij = StatsMatrix;
+                end
+                
+                % Plot contour
+                if g.pcontour.arg_selection
+                    if isscalar(Sji) && any(C(:)-C(1))
+                        % use contour for constant threshold
+                        hold on;
+                        contour(erWinCenterTimes,g.freqValues,C,[Sji Sji], ...
+                            'color',g.pcontour.contourcolor);
+                        hold off
+                    elseif length(Sji)==2 && any(C(:)-C(1))
+                        hold on;
+                        contour(erWinCenterTimes,g.freqValues,C,Sji, ...
+                            'color',g.pcontour.contourcolor);
+                        hold off
+                    end
+                end
+                
+                
+                
+                % Prepare the arguments for vis_TimeFreqCell()
+                % This function will be called when user clicks on subplot
+                if strcmpi(g.topoplot,'topoplot')
+                    subargs.topovec     = squeeze(ALLEEG(1).icawinv(:,ALLEEG(1).CAT.curComps([j i])))';
+                elseif strcmpi(g.topoplot,'customtopo')
+                    subargs.customTopoMatrix = g.customTopoMatrix([j i]);
+                else
+                    subargs.topovec = [];
+                    subargs.customTopoMatrix = {};
+                end
+                
+                if ~isempty(ALLEEG(1).dipfit) && isfield(ALLEEG(1).dipfit,'model')
+                    subargs.dipfitstruct = ALLEEG(1).dipfit;
+                    subargs.dipfitstruct.model = subargs.dipfitstruct.model(ALLEEG(1).CAT.curComps([j i]));
+                else
+                    subargs.dipfitstruct = [];
+                end
+                subargs.elocs       = ALLEEG(1).chanlocs;
+                subargs.chaninfo    = ALLEEG(1).chaninfo;
+                subargs.alltimes    = erWinCenterTimes;
+                subargs.allfreqs    = origFreqValues;
+                
+                if ~isempty(Sji)
+                    subargs.StatsMatrix(1,:,:,:,:) = Sji;
+                    subargs.StatsMatrix(2,:,:,:,:) = Sij;
+                else
+                    subargs.StatsMatrix = [];
+                end
+                
+                subargs.ConnMatrix(1,:,:)  = squeeze(OrigConnMatrix(i,j,:,:));
+                subargs.ConnMatrix(2,:,:)  = squeeze(OrigConnMatrix(j,i,:,:));
+                subargs.baseline    = g.baseline;
+                subargs.freqscale   = g.freqscale;
+                subargs.events      = g.events;
+                subargs.topoplot    = g.topoplot;
+                subargs.topoplot_opts = g.topoplot_opts;
+                subargs.titleString = g.titleString;
+                subargs.titleFontSize   = g.titleFontSize;
+                subargs.axesFontSize    = g.axesFontSize;
+                subargs.textColor       = g.textColor;
+                subargs.backgroundColor = g.backgroundColor;
+                subargs.clim            = clim;
+                subargs.thresholding    = g.thresholding;
+                subargs.bidir           = fastif(i==j,false,true);
+                subargs.connmethod      = CEstimator;
+                subargs.nodelabels      = g.nodelabels([j i]);
+                subargs.dipplot         = g.dipplot;
+                subargs.foilines        = g.foilines;
+                subargs.foilinecolor    = g.foilinecolor;
+                subargs.smooth          = g.smooth;
+                subargs.colorscheme     = g.colorscheme;
+                subargs.colormap        = g.colormap;
+                
+                set(gca,'userdata',subargs)
+                set([gca h],'buttondownfcn','vis_TimeFreqCell(get(gca,''UserData''));');
+                %             set([gca h],'tooltip',sprintf('%s --> %s. Click to expand',g.nodelabels{j},g.nodelabels{i}));
+                
+                set(gca,'Xlim',[erWinCenterTimes(1)+OFFSET erWinCenterTimes(end)-OFFSET]);
+                % [erWinCenterTimes(1)-winlen/(2*ALLEEG(1).srate) erWinCenterTimes(end)+winlen/(2*ALLEEG(1).srate)]
+                set(gca,'Ylim',g.freqValues([1 end]));
+                
+                set(gca,'XColor',g.textColor,'YColor',g.textColor);
+                set(gca,'fontsize',g.axesFontSize);
+                
+                
+                % draw event markers
+                if ~isempty(g.events)
+                    for i=1:length(g.events)
+                        events = g.events{i};
+                        
+                        % set defaults
+                        if length(events) < 4
+                            events{4} = 2;      end
+                        if length(events) < 3
+                            events{3} = ':';    end
+                        if length(events) < 2
+                            events{2} = 'r';     end
+                        
+                        vl = vline(events{1});
+                        set(vl,'color',events{2},'linestyle',events{3},'linewidth',events{4});
+                    end
+                end
+                
+                % draw horizontal lines at frequencies of interest
+                if ~isempty(g.foilines)
+                    for ln=1:length(g.foilines)
+                        hl = hline(g.foilines(ln));
+                        if isempty(g.foilinecolor)
+                            color = colorlist{mod(ln-1,length(colorlist))+1};
+                        elseif size(g.foilinecolor,1) > 1
+                            color = g.foilinecolor(ln,:);
+                        elseif size(g.foilinecolor,1) == 1
+                            color = g.foilinecolor;
+                        end
+                        
+                        
+                        set(hl,'color',color,'linestyle','-','linewidth',1);
+                        set(hl,'tag','foilines');
+                    end
+                end
+                
+                % create a red border around diagonal plots
+                if ch_i==ch_j
+                    %                 hlp_subplot1(sub2ind([numSubplotRows,numSubplotCols],ch_j+numSubplotRows-nch,ch_i+numSubplotCols-nch));
+                    pos = get(gca,'position');
+                    hborder = annotation('rectangle',pos,'edgecolor',[1 0 0],'linewidth',2);
+                    set(hborder,'userdata',gca);
+                    set(hborder,'buttondownfcn','vis_TimeFreqCell(get(get(gco,''UserData''),''UserData''));');
+                end
+                
+                
+            case  'FrequencyXCausality'
+                % ---------------------------------
+                % | Format is Frequency x Causality
+                % ---------------------------------
+                
+                
+                if isequal(size(StatsMatrix),size(ConnMatrix))
+                    S = squeeze(StatsMatrix(i,j,:,:));
+                else
+                    S = StatsMatrix;
+                end
+                
+                hold on
+                for tt=1:ntime
+                    % plot a set of causality x frequency traces for each time window
+                    
+                    % plot confidence intervals
+                    if willPlotStatCI(g,CEstimator)
+                        ci = g.stats.(CEstimator).ci;
+                        if ndims(ci)>=4 && size(ci,1)==2
+                            % asymmetric confidence intervals
+                            ciplot(squeeze(ci(1,i,j,:,tt)),squeeze(ci(2,i,j,:,tt)),g.freqValues,[0.7 0.7 0.7],0,'Ylim',clim,'FaceAlpha',0.5,'EdgeColor',[0.2 0.2 0.2]);
+                        else
+                            % symmetric confidence intervals (about zero)
+                            ciplot(-squeeze(ci(i,j,:,tt)),squeeze(ci(i,j,:,tt)),g.freqValues,[0.7 0.7 0.7],1,'FaceAlpha',0.5,'EdgeColor',[0.2 0.2 0.2]);
                         end
                     end
-                end
-                
-                if strcmpi(g.thresholding.arg_selection,'statistics') ...
-                        && strcmpi(g.thresholding.sigthreshmethod,'pval') && islogical(S)
-                    % shade significant regions
                     
-                    set(gca,'Ylim',clim);
-                    
-                    % identify intervals of significance
-                    sigidx = hlp_bittok(S,1);
-                    
-                    for k=1:size(sigidx,1)
-                        % create patch to shade interval
-                        [hpatch{k} htext{k}]=hlp_vrect(g.freqValues(sigidx(k,:)),'label',{},'textPosition',[0.5 0.9],'yscale',0.1,'dock','bottom','patchProperties',{'FaceAlpha',0.2,'FaceColor',g.patchcolor},'textProperties',{'Color','b','EdgeColor','k','BackgroundColor','r','FontSize',14});
-                        box on;
-                    end
-                end
-                
-                % plot causality trace
-                if ntime==1
-                    if strcmpi(g.freqscale,'log')
-                        h = semilogx(g.freqValues,squeeze(OrigConnMatrix(i,j,:,:)),'color',g.linecolor);
-                    else
-                        h=plot(g.freqValues,squeeze(OrigConnMatrix(i,j,:,:)),'color',g.linecolor);
-                    end
-                else
-                    if strcmpi(g.freqscale,'log')
-                        h = semilogx(g.freqValues,squeeze(OrigConnMatrix(i,j,:,tt)),'color',colorlist{mod(tt-1,length(colorlist))+1});
-                    else
-                        h=plot(g.freqValues,squeeze(OrigConnMatrix(i,j,:,tt)),'color',colorlist{mod(tt-1,length(colorlist))+1});
-                    end
-                end
-                
-                
-            end
-            
-            if g.plotCondDiff.arg_selection || ~isempty(g.baseline)
-                % make line at zero
-                zh = hline(0);
-                set(zh,'color',g.linecolor,'linestyle','-.')
-            end
-                
-            
-            set(gca,'Ylim',clim);
-            set(gca,'Xlim',[g.freqValues(1) g.freqValues(end)]);
-            set(gca,'tag','lineplot');
-            
-
-            % draw vertical lines at frequencies of interest
-            if ~isempty(g.foilines)
-                for ln=1:length(g.foilines)
-                    hl = vline(g.foilines(ln));
-                    if isempty(g.foilinecolor)
-                        color = colorlist{mod(ln-1,length(colorlist))+1};
-                    elseif size(g.foilinecolor,1) > 1
-                        color = g.foilinecolor(ln,:);
-                    elseif size(g.foilinecolor,1) == 1
-                        color = g.foilinecolor;
-                    end
-                    
-                    
-                    set(hl,'color',color,'linestyle','-','linewidth',1);
-                    set(hl,'tag','foilines');
-                end
-            end
-            
-            hold off
-            
-        elseif ntime > 1
-            % ---------------------------------
-            % | Format is Causality x Time
-            % ---------------------------------
-            
-            GridType = 'CausalityXTime';
-            
-            hold on
-            
-            if isequal(size(StatsMatrix),size(ConnMatrix))
-                S = squeeze(StatsMatrix(i,j,:,:));
-            else
-                S = StatsMatrix;
-            end
-            
-            for ff=1:nfreqs
-                
-                % plot confidence intervals
-                if ~isempty(g.stats) && strcmpi(g.thresholding.arg_selection,'statistics') ...
-                    && isfield(g.stats.(CEstimator),'ci') && g.thresholding.plotci
-                    ci = g.stats.(CEstimator).ci;
-                    if ndims(ci)>=4 && size(ci,1)==2
-                        % asymmetric confidence intervals
-                        ciplot(squeeze(ci(1,i,j,ff,:)),squeeze(ci(2,i,j,ff,:)),erWinCenterTimes,[0.7 0.7 0.7],0,'Ylim',clim,'FaceAlpha',0.5,'EdgeColor',[0.2 0.2 0.2]);
-                    else
-                        % symmetric confidence intervals (about zero)
-                        ciplot(-squeeze(ci(i,j,ff,:)),squeeze(ci(i,j,ff,:)),erWinCenterTimes,[0.7 0.7 0.7],1,'FaceAlpha',0.5,'EdgeColor',[0.2 0.2 0.2]);
-                    end
-                end
-                
-                if strcmpi(g.thresholding.arg_selection,'statistics') ...
-                        && strcmpi(g.thresholding.sigthreshmethod,'thresh')
-                    % plot statistical thresholds
-                    if ~isempty(S)
-                        if isscalar(S)
-                            % constant threshold
-                            plot(erWinCenterTimes,S(ones(1,length(erWinCenterTimes))),'r:');
-                        elseif isvector(S)
-                            % variable threshold
-                            plot(erWinCenterTimes,S,'r:');
+                    if strcmpi(g.thresholding.arg_selection,'statistics') ...
+                            && strcmpi(g.thresholding.sigthreshmethod,'thresh')
+                        % plot statistical thresholds
+                        if ~isempty(S)
+                            if isscalar(S)
+                                % constant threshold
+                                plot(g.freqValues,S(ones(1,length(g.freqValues))),'r:');
+                            elseif isvector(S)
+                                % variable threshold
+                                plot(g.freqValues,S,'r:');
+                            end
                         end
                     end
-                end
-                
-                if strcmpi(g.thresholding.arg_selection,'statistics') ...
-                        && strcmpi(g.thresholding.sigthreshmethod,'pval') && islogical(S)
-                    % shade significant regions
                     
-                    set(gca,'Ylim',clim);
-                    
-                    % identify intervals of significance
-                    sigidx = hlp_bittok(S,1);
-                    
-                    for k=1:size(sigidx,1)
-                        % create patch to shade interval
-                        [hpatch{k} htext{k}]=hlp_vrect(erWinCenterTimes(sigidx(k,:)),'label',{},'textPosition',[0.5 0.9],'yscale',0.1,'dock','bottom','patchProperties',{'FaceAlpha',0.2,'FaceColor',g.patchcolor},'textProperties',{'Color','b','EdgeColor','k','BackgroundColor','r','FontSize',14});
-                        box on;
+                    if strcmpi(g.thresholding.arg_selection,'statistics') ...
+                            && strcmpi(g.thresholding.sigthreshmethod,'pval') && islogical(S)
+                        % shade significant regions
+                        
+                        set(gca,'Ylim',clim);
+                        
+                        % identify intervals of significance
+                        sigidx = hlp_bittok(S,1);
+                        
+                        for k=1:size(sigidx,1)
+                            % create patch to shade interval
+                            [hpatch{k} htext{k}]=hlp_vrect(g.freqValues(sigidx(k,:)),'label',{},'textPosition',[0.5 0.9],'yscale',0.1,'dock','bottom','patchProperties',{'FaceAlpha',0.2,'FaceColor',g.patchcolor},'textProperties',{'Color','b','EdgeColor','k','BackgroundColor','r','FontSize',14});
+                            box on;
+                        end
                     end
-                end
-                
-                
-                % plot causality trace
-                if nfreqs==1
-                    if strcmpi(g.freqscale,'log')
-                        h = semilogx(erWinCenterTimes,squeeze(OrigConnMatrix(i,j,:,:)),'color',g.linecolor);
+                    
+                    % plot causality trace
+                    if ntime==1
+                        if strcmpi(g.freqscale,'log')
+                            h = semilogx(g.freqValues,squeeze(OrigConnMatrix(i,j,:,:)),'color',g.linecolor);
+                        else
+                            h=plot(g.freqValues,squeeze(OrigConnMatrix(i,j,:,:)),'color',g.linecolor);
+                        end
                     else
-                        h=plot(erWinCenterTimes,squeeze(OrigConnMatrix(i,j,:,:)),'color',g.linecolor);
+                        if strcmpi(g.freqscale,'log')
+                            h = semilogx(g.freqValues,squeeze(OrigConnMatrix(i,j,:,tt)),'color',colorlist{mod(tt-1,length(colorlist))+1});
+                        else
+                            h=plot(g.freqValues,squeeze(OrigConnMatrix(i,j,:,tt)),'color',colorlist{mod(tt-1,length(colorlist))+1});
+                        end
                     end
+                    
+                    
+                end
+                
+                if g.plotCondDiff.arg_selection || ~isempty(g.baseline)
+                    % make line at zero
+                    zh = hline(0);
+                    set(zh,'color',g.linecolor,'linestyle','-.')
+                end
+                
+                
+                set(gca,'Ylim',clim);
+                set(gca,'Xlim',[g.freqValues(1) g.freqValues(end)]);
+                set(gca,'tag','lineplot');
+                
+                % draw vertical lines at frequencies of interest
+                if ~isempty(g.foilines)
+                    for ln=1:length(g.foilines)
+                        hl = vline(g.foilines(ln));
+                        if isempty(g.foilinecolor)
+                            color = colorlist{mod(ln-1,length(colorlist))+1};
+                        elseif size(g.foilinecolor,1) > 1
+                            color = g.foilinecolor(ln,:);
+                        elseif size(g.foilinecolor,1) == 1
+                            color = g.foilinecolor;
+                        end
+                        
+                        
+                        set(hl,'color',color,'linestyle','-','linewidth',1);
+                        set(hl,'tag','foilines');
+                    end
+                end
+                
+                hold off
+                
+            case 'TimeXCausality'
+                % ---------------------------------
+                % | Format is Causality x Time
+                % ---------------------------------
+                
+                hold on
+                
+                if isequal(size(StatsMatrix),size(ConnMatrix))
+                    S = squeeze(StatsMatrix(i,j,:,:));
                 else
-                    if strcmpi(g.freqscale,'log')
-                        h = semilogx(erWinCenterTimes,squeeze(OrigConnMatrix(i,j,ff,:)),'color',colorlist{mod(ff-1,length(colorlist))+1});
+                    S = StatsMatrix;
+                end
+                
+                for ff=1:nfreqs
+                    
+                    % plot confidence intervals
+                    if ~isempty(g.stats) && strcmpi(g.thresholding.arg_selection,'statistics') ...
+                            && isfield(g.stats.(CEstimator),'ci') && g.thresholding.plotci
+                        ci = g.stats.(CEstimator).ci;
+                        if ndims(ci)>=4 && size(ci,1)==2
+                            % asymmetric confidence intervals
+                            ciplot(squeeze(ci(1,i,j,ff,:)),squeeze(ci(2,i,j,ff,:)),erWinCenterTimes,[0.7 0.7 0.7],0,'Ylim',clim,'FaceAlpha',0.5,'EdgeColor',[0.2 0.2 0.2]);
+                        else
+                            % symmetric confidence intervals (about zero)
+                            ciplot(-squeeze(ci(i,j,ff,:)),squeeze(ci(i,j,ff,:)),erWinCenterTimes,[0.7 0.7 0.7],1,'FaceAlpha',0.5,'EdgeColor',[0.2 0.2 0.2]);
+                        end
+                    end
+                    
+                    if strcmpi(g.thresholding.arg_selection,'statistics') ...
+                            && strcmpi(g.thresholding.sigthreshmethod,'thresh')
+                        % plot statistical thresholds
+                        if ~isempty(S)
+                            if isscalar(S)
+                                % constant threshold
+                                plot(erWinCenterTimes,S(ones(1,length(erWinCenterTimes))),'r:');
+                            elseif isvector(S)
+                                % variable threshold
+                                plot(erWinCenterTimes,S,'r:');
+                            end
+                        end
+                    end
+                    
+                    if strcmpi(g.thresholding.arg_selection,'statistics') ...
+                            && strcmpi(g.thresholding.sigthreshmethod,'pval') && islogical(S)
+                        % shade significant regions
+                        
+                        set(gca,'Ylim',clim);
+                        
+                        % identify intervals of significance
+                        sigidx = hlp_bittok(S,1);
+                        
+                        for k=1:size(sigidx,1)
+                            % create patch to shade interval
+                            [hpatch{k} htext{k}]=hlp_vrect(erWinCenterTimes(sigidx(k,:)),'label',{},'textPosition',[0.5 0.9],'yscale',0.1,'dock','bottom','patchProperties',{'FaceAlpha',0.2,'FaceColor',g.patchcolor},'textProperties',{'Color','b','EdgeColor','k','BackgroundColor','r','FontSize',14});
+                            box on;
+                        end
+                    end
+                    
+                    
+                    % plot causality trace
+                    if nfreqs==1
+                        if strcmpi(g.freqscale,'log')
+                            h = semilogx(erWinCenterTimes,squeeze(OrigConnMatrix(i,j,:,:)),'color',g.linecolor);
+                        else
+                            h=plot(erWinCenterTimes,squeeze(OrigConnMatrix(i,j,:,:)),'color',g.linecolor);
+                        end
                     else
-                        h=plot(erWinCenterTimes,squeeze(OrigConnMatrix(i,j,ff,:)),'color',colorlist{mod(ff-1,length(colorlist))+1});
+                        if strcmpi(g.freqscale,'log')
+                            h = semilogx(erWinCenterTimes,squeeze(OrigConnMatrix(i,j,ff,:)),'color',colorlist{mod(ff-1,length(colorlist))+1});
+                        else
+                            h=plot(erWinCenterTimes,squeeze(OrigConnMatrix(i,j,ff,:)),'color',colorlist{mod(ff-1,length(colorlist))+1});
+                        end
+                    end
+                    
+                    
+                end
+                
+                if g.plotCondDiff.arg_selection || ~isempty(g.baseline)
+                    % make line at zero
+                    zh = hline(0);
+                    set(zh,'color',g.linecolor,'linestyle','-.')
+                end
+                
+                % draw horizontal lines at levels of interest
+                if ~isempty(g.foilines)
+                    for ln=1:length(g.foilines)
+                        hl = hline(g.foilines(ln));
+                        if isempty(g.foilinecolor)
+                            color = colorlist{mod(ln-1,length(colorlist))+1};
+                        elseif size(g.foilinecolor,1) > 1
+                            color = g.foilinecolor(ln,:);
+                        elseif size(g.foilinecolor,1) == 1
+                            color = g.foilinecolor;
+                        end
+                        
+                        set(hl,'color',color,'linestyle','-','linewidth',1);
+                        set(hl,'tag','foilines');
+                    end
+                end
+                
+                set(gca,'Ylim',clim);
+                set(gca,'Xlim',[erWinCenterTimes(1) erWinCenterTimes(end)]);
+                set(gca,'tag','lineplot');
+                
+                % draw baseline shaded region
+                if ~isempty(g.baseline)
+                    hlp_vrect(g.baseline,'yscale',1,'patchProperties',{'FaceAlpha',0.5,'FaceColor',[0.7 0.7 1],'EdgeColor','none'});
+                end
+                
+                % draw event markers
+                if ~isempty(g.events)
+                    for i=1:length(g.events)
+                        events = g.events{i};
+                        
+                        % set defaults
+                        if length(events) < 4
+                            events{4} = 2;      end
+                        if length(events) < 3
+                            events{3} = ':';    end
+                        if length(events) < 2
+                            events{2} = 'r';     end
+                        
+                        vl = vline(events{1});
+                        set(vl,'color',events{2},'linestyle',events{3},'linewidth',events{4});
                     end
                 end
                 
                 
-            end
-            
-            if g.plotCondDiff.arg_selection || ~isempty(g.baseline)
-                % make line at zero
-                zh = hline(0);
-                set(zh,'color',g.linecolor,'linestyle','-.')
-            end
-            
-            
-            set(gca,'Ylim',clim); 
-            set(gca,'Xlim',[erWinCenterTimes(1) erWinCenterTimes(end)]);
-            set(gca,'tag','lineplot');
-            
-            % draw baseline shaded region
-            if ~isempty(g.baseline)
-                hlp_vrect(g.baseline,'yscale',1,'patchProperties',{'FaceAlpha',0.5,'FaceColor',[0.7 0.7 1],'EdgeColor','none'});
-            end
-            
-            % draw event markers
-            if ~isempty(g.events)
-                for i=1:length(g.events)
-                    events = g.events{i};
-                    
-                    % set defaults
-                    if length(events) < 4
-                        events{4} = 2;      end
-                    if length(events) < 3
-                        events{3} = ':';    end
-                    if length(events) < 2
-                        events{2} = 'r';     end
-                    
-                    vl = vline(events{1});
-                    set(vl,'color',events{2},'linestyle',events{3},'linewidth',events{4});
-                end
-            end
-            
-            
-            hold off
-            
+                hold off
+                
         end
         
+        % set x and y tick marks for current plot
+        % (if a label is to be plotted)
+        if ~isempty(get(gca,'XTickLabel'))
+            if ~isempty(g.xloc)
+                set(gca,'XTick',g.xloc); end
+            if ~isempty(g.xord)
+                set(gca,'XTickLabel',g.xord); end
+        end
+        if ~isempty(get(gca,'YTickLabel'))
+            if ~isempty(g.yloc)
+                set(gca,'YTick',g.yloc); end
+            if ~isempty(g.yord)
+                set(gca,'YTickLabel',g.yord); end
+        end
     end
 end
 
@@ -1716,13 +1947,13 @@ set(leghandle,'Interpreter','none','fontsize',g.axesFontSize);
 
 % place axis labels on top/bottom/right/left of Grid
 switch GridType
-    case 'TimeXFreq'
+    case 'TimeXFrequency'
         RightLabelString = 'Frequency (Hz)';
         BotLabelString   = 'Time (sec)';
-    case 'CausalityXFreq'
+    case 'FrequencyXCausality'
         RightLabelString = 'Coupling';
         BotLabelString   = 'Frequency (Hz)';
-    case 'CausalityXTime'
+    case 'TimeXCausality'
         RightLabelString = 'Coupling';
         BotLabelString   = 'Time (sec)';
 end

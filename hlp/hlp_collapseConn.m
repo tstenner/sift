@@ -116,7 +116,7 @@ if ~isstruct(Conn) || isempty(Conn)
     Conn = struct([]);
 end
 
-g = arg_define(varargin, ...
+g = arg_define([0 Inf], varargin, ...
     arg_norep({'Conn','Connectivity'},mandatory,[],'Connectivity structure. Can also be a PConn structure.'), ...
     arg({'connmethods','ConnectivityMethods'},cnames,cnames,'Connectivity method names. Cell array of connectivity method names.'), ...
     arg_sub({'coldim','DimensionToCollapse'},{}, ...
@@ -213,6 +213,9 @@ colseq = hlp_vec(colseq(seqorder));
 
 if isempty(g.connmethods)
     g.connmethods = hlp_getConnMethodNames(Conn); end
+if ~iscell(g.connmethods)
+    g.connmethods = {g.connmethods}; end
+
 % Collapse each conn method individually
 for m=1:length(g.connmethods)
     connmethod = g.connmethods{m};
@@ -278,7 +281,7 @@ for m=1:length(g.connmethods)
     
 end
 
-if ~isempty(frangeidx)
+if ~isempty(frangeidx) && ~strcmpi(g.coldim.freq.method,'getrange')
     Conn.collapsedFreqs = [];
     if size(frangeidx,1) > 1
         for k=1:size(frangeidx,1)
@@ -295,7 +298,7 @@ if ~isempty(frangeidx)
     % Conn.freqs = median(Conn.freqs(frangeidx),2)';
 end
 
-if ~isempty(trangeidx)
+if ~isempty(trangeidx) && ~strcmpi(g.coldim.time.method,'getrange')
     Conn.collapsedTimes = [];
     Conn.collapsedWinCenterTimes = [];
     if size(trangeidx,1) > 1

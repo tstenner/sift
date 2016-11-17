@@ -59,8 +59,10 @@ end
 switch srcdyn.arg_selection
     case 'VAR'
         % Error checking
-        if length(srcdyn.sim.expr) ~= nroi
-             error('You must have an equal number of sources in the dynamical model as source ROIs in the forward model'); end
+        if (isfield(srcdyn.sim,'expr') && length(srcdyn.sim.expr) ~= nroi) ...
+            || (isfield(srcdyn.sim,'rndopts') && srcdyn.sim.rndopts.nchs ~= nroi)
+             error('You must have an equal number of sources in the dynamical model as source ROIs in the forward model'); 
+        end
         [EEGsim EEGtrue] = sim_varmodel(srcdyn,'verb',verb);
     case 'Precomputed'
         if ismatrix(srcdyn.srcdata) && ~isempty(srcdyn.srcdata)
@@ -156,6 +158,6 @@ if nargout > 2
     fwdModel.centroids_LFM_idx = centroids_LFM_idx;
 end
 
-% check dataset integrity
+% validate datasets
 EEGsim  = eeg_checkset(EEGsim);
 EEGtrue = eeg_checkset(EEGtrue);

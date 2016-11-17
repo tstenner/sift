@@ -411,7 +411,7 @@ if isempty(g.nodeSizeDataRange)
     end
     
     % make 0 in the center of colormap
-    if g.centerDataRange
+    if g.centerDataRange && ~(all(g.nodeSizeDataRange<=0) || all(g.nodeSizeDataRange>=0))
         g.nodeSizeDataRange(1) = -max(g.nodeSizeDataRange);
         g.nodeSizeDataRange(2) =  max(g.nodeSizeDataRange);
     end
@@ -425,7 +425,7 @@ if isempty(g.nodeColorDataRange)
     end
     
     % make 0 in the center of colormap
-    if g.centerDataRange
+    if g.centerDataRange && ~(all(g.nodeColorDataRange<=0) || all(g.nodeColorDataRange>=0))
         g.nodeColorDataRange(1) = -max(g.nodeColorDataRange);
         g.nodeColorDataRange(2) =  max(g.nodeColorDataRange);
     end
@@ -442,7 +442,7 @@ if isempty(g.edgeSizeDataRange)
     end
     
     % make 0 in the center of colormap
-    if g.centerDataRange
+    if g.centerDataRange && ~(all(g.edgeSizeDataRange<=0) || all(g.edgeSizeDataRange>=0))
         g.edgeSizeDataRange(1) = -max(g.edgeSizeDataRange);
         g.edgeSizeDataRange(2) =  max(g.edgeSizeDataRange);
     end
@@ -458,7 +458,7 @@ if isempty(g.edgeColorDataRange)
     end
     
     % make 0 in the center of colormap
-    if g.centerDataRange
+    if g.centerDataRange && ~(all(g.edgeColorDataRange<=0) || all(g.edgeColorDataRange>=0))
         g.edgeColorDataRange(1) = -max(g.edgeColorDataRange);
         g.edgeColorDataRange(2) =  max(g.edgeColorDataRange);
     end
@@ -932,7 +932,7 @@ if ismember_bc(lower(g.mode),{'init','init_and_render'})
                         events{2} = 'r';    end
                     
                     
-                    lh = vline(events{1},events{2},events{5},0,g.vars.hFooterPanel(tmpcond));
+                    lh = vline(events{1},events{2},events{5},1,g.vars.hFooterPanel(tmpcond));
                     set(lh,'linestyle',events{3},'linewidth',events{4}*g.resmult);
                 end
             end
