@@ -1,4 +1,3 @@
-
 function [normdata g] = pre_normData(varargin)
 % 
 % Normalization is an important operation for improving stationarity when
@@ -21,8 +20,9 @@ function [normdata g] = pre_normData(varargin)
 %                     Default value  : 0                                       
 %                     Input Data Type: real number (double)                    
 % 
-%     Method:         Normalize windows across time, ensemble, or both         
-%                     Possible values: 'ensemble','time'                       
+%     Method:         Normalize windows across time, ensemble, participants
+%                     or combinations of those
+%                     Possible values: 'ensemble', 'time', 'hyper'
 %                     Default value  : 'time','ensemble'                       
 %                     Input Data Type: boolean     
 % Outputs:
@@ -53,7 +53,7 @@ function [normdata g] = pre_normData(varargin)
 g = arg_define([0 1], varargin, ...
         arg_norep('data',mandatory), ...
         arg({'verb','VerbosityLevel'},0,{int32(0) int32(1) int32(2)},'Verbosity level. 0 = no output, 1 = text, 2 = graphical'), ...
-        arg({'method','Method'},{'time','ensemble'},{'time','ensemble'},'Normalize windows across time, ensemble, or both','type','logical'));
+        arg({'method','Method'},{'time','ensemble'},{'hyper','time','ensemble'},'Normalize windows across time, ensemble, participants','type','logical'));
     
 % commit data variable to workspace
 data = g.data;
@@ -74,6 +74,14 @@ for k=1:length(g.method)
         multiWaitbar('Normalizing',k/length(g.method));
     end
     switch lower(g.method{k})
+		case 'hyper'
+			if mod(nchs, 2) == 1
+				error('Can''t  distribute odd number of channels among participants')
+			end
+			% normalize each participant, i.e. half of the channels
+			% separately
+			normdata = zscore(reshape(data, [2, nchs/2 * pnts * ntr]), 0, 2);
+			normdata = reshape(normdata, [nchs, pnts, ntr]);
         case 'ensemble'
             % pointwise subtract ensemble mean (over trials)
             % divide by ensemble stdev
@@ -81,15 +89,13 @@ for k=1:length(g.method)
                 if g.verb, fprintf('Multiple trials not available, ignoring ensemble normalization\n'); end
             else
                 if g.verb, fprintf('Normalizing data across ensemble...\n'); end
-                normdata = bsxfun(@minus,data,mean(data,3));
-                normdata = bsxfun(@rdivide,normdata,std(data,0,3));
+				normdata = zscore(data, 0, 3);
             end
         case 'time'
             % pointwise subtract trial mean
             % divide by trial stdev
             if g.verb, fprintf('Normalizing data across time...\n'); end
-            normdata = bsxfun(@minus,data,mean(data,2));
-            normdata = bsxfun(@rdivide,normdata,std(data,0,2));
+			normdata = zscore(data, 0, 2);
     end
     
     data = normdata;
@@ -97,4 +103,22 @@ end
 
 if g.verb==2
     multiWaitbar('Normalizing','Close');
+end
+end
+
+% normalize X by dimensions dim
+% flag = 0: divide by n-1, 1: n
+function X = zscore(X, flag, dim)
+X = X - mean(X, dim);
+	n = size(X, dim);
+	% skip if dim == 1
+	if n ~= 1
+		if flag == 0
+			n = n - 1;
+		end
+		% mean is zero, so 𝜎=√∑x^2/(n-1)
+		sigma = sqrt(sum(X.*X, dim) / n);
+		sigma(sigma==0) = 1;
+		X = X ./ sigma;
+	end
 end
