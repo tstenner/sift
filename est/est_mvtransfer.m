@@ -284,19 +284,25 @@ end
 
 if any(strcmpi('RPDC',methodsneeded))
     V = est_calcInvCovMatFourier(Conn.Rinv,C,freqs,srate,nchs,morder,0);
+    % faster squeeze for inner loop
+    sqz = @(mat) reshape(mat, [2,2]);
+    % precalculate frequencies for which V is singular
+    isfreqsingular = freqs == 0 | freqs == srate/2;
+    % precalculate a
+    a = zeros(nchs, nchs, 2, nfreqs);
+    a(:, :, 1, :) = real(reshape(Conn.PDC(:,:,:), [nchs, nchs, 1, nfreqs]));
+    a(:, :, 2, :) = imag(reshape(Conn.PDC(:,:,:), [nchs, nchs, 1, nfreqs]));
     for i=1:nchs
-        for j=i:nchs
-            aij = [real(squeeze(Conn.PDC(i,j,:))).'; imag(squeeze(Conn.PDC(i,j,:))).'];
-            aji = [real(squeeze(Conn.PDC(j,i,:))).'; imag(squeeze(Conn.PDC(j,i,:))).'];
+        for j=1:nchs
+            % aij = [real(squeeze(Conn.PDC(i,j,:))).'; imag(squeeze(Conn.PDC(i,j,:))).'];
+            aij = reshape(a(i,j,:,:), [2, nfreqs]);
             for k=1:nfreqs
-                if any(freqs(k)==[0 srate/2])
+                if isfreqsingular(k)
                     % V is singular, so use generalized inverse (pinv)
-                    Conn.RPDC(i,j,k) = (((aij(:,k)'*pinv(squeeze(V(i,j,k,:,:)))))*aij(:,k))/2;
-                    Conn.RPDC(j,i,k) = (((aji(:,k)'*pinv(squeeze(V(j,i,k,:,:)))))*aji(:,k))/2;
+                    Conn.RPDC(i,j,k) = (aij(:,k)' * pinv(sqz(V(i,j,k,:,:)))) * aij(:,k);
                 else
                     % V is nonsingular, so use (faster) backslash 
-                    Conn.RPDC(i,j,k) = (((aij(:,k)'/squeeze(V(i,j,k,:,:))))*aij(:,k))/2;
-                    Conn.RPDC(j,i,k) = (((aji(:,k)'/squeeze(V(j,i,k,:,:))))*aji(:,k))/2;
+                    Conn.RPDC(i,j,k) = (aij(:,k)' / sqz(V(i,j,k,:,:))) * aij(:,k);
                 end
                 %                 %% DEBUG!
                 %                  try chol(squeeze(V(j,i,k,:,:))); % check for pos-definiteness
@@ -306,6 +312,7 @@ if any(strcmpi('RPDC',methodsneeded))
             end
         end
     end
+    Conn.RPDC = Conn.RPDC ./ 2;
 end
 
 
