@@ -36,24 +36,25 @@ nt=length(y);
 y_line=zeros(nt,1);
 norm=y_line;
 nwin=ceil((nt-n)/dn);
-yfit=zeros(nwin,n);
-xwt=((1:n)-n/2)/(n/2);
-wt=(1-abs(xwt).^3).^3;
+
+wt = (1 - abs((2/n-1):2/n:1).^3).^3;
 for j=1:nwin, 
-	tseg=y(dn*(j-1)+1:dn*(j-1)+n);
+    idx = dn*(j-1)+1:dn*(j-1)+n;
+	tseg = y(idx);
 	y1=sum(tseg)/n;
     
     if strcmpi(method,'linear')
         y2=sum((1:n)'.*tseg)*2/(n*(n+1));
         a=(y2-y1)*6/(n-1); b=y1-a*(n+1)/2;
-        yfit(j,:)=(1:n)*a+b;
+        yfit = (1:n)*a+b;
     else
-        yfit(j,:)=y1(ones(size(tseg)));
+        yfit = y1;
     end
-    y_line((j-1)*dn+(1:n))=y_line((j-1)*dn+(1:n))+(yfit(j,:).*wt)';
-	norm((j-1)*dn+(1:n))=norm((j-1)*dn+(1:n))+wt';
+    y_line(idx) = y_line(idx) + (yfit.*wt)';
+	norm(idx) = norm(idx) + wt';
 end
-mask=find(norm>0); y_line(mask)=y_line(mask)./norm(mask);
+norm(norm==0) = 1;
+y_line = y_line ./ norm;
 indx=(nwin-1)*dn+n-1;
 npts=length(y)-indx+1;
 if strcmpi(method,'linear')
