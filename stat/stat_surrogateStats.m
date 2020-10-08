@@ -137,6 +137,13 @@ g = arg_define([0 Inf],varargin, ...
     arg({'verb','VerbosityLevel'},1,{int32(0) int32(1)},'Verbosity level. 0 = no output, 1 = verbose output') ...
     );
 
+missing = setdiff(g.connmethods, ConnNames);
+if ~isempty(missing)
+    error('SIFT:stat_surrogateStats', ...
+        'Requested statistics for connectivity indices that haven''t been estimated: %s', ...
+        strjoin(missing, ', '));
+end
+
 [Stats ConnNew] = deal([]);
 
 % check if we have surrogate distributions
