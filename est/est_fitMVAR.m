@@ -1401,6 +1401,7 @@ if g.setArgDirectMode
     g = arg_setdirect(g,true);
 end
 
+algFcn = str2func(hlp_getMVARalgorithms('mfileNameOnly',g.algorithm.arg_selection));
 for t=1:numWins
     
     if g.timer, tic; end
@@ -1409,16 +1410,13 @@ for t=1:numWins
     winpnts = g.winStartIdx(t):g.winStartIdx(t)+winLenPnts-1;
     
     % execute the model-fitting algorithm
-    algFcnName = hlp_microcache('algos',@hlp_getMVARalgorithms,'mfileNameOnly',g.algorithm.arg_selection);
-    switch nargout(algFcnName)
+    switch nargout(algFcn)
         case 2
-            [AR{t} PE{t}] = feval(algFcnName, ...
-                'data',bsxfun(@times,g.taper,EEG.CAT.srcdata(:,winpnts,:)), ...
-                g.algorithm);
+            [AR{t}, PE{t}] = algFcn(...
+                'data', g.taper .* EEG.CAT.srcdata(:,winpnts,:), g.algorithm);
         case 3
-            [AR{t} PE{t} argsout] = feval(algFcnName, ...
-                                   'data',bsxfun(@times,g.taper,EEG.CAT.srcdata(:,winpnts,:)),...
-                                    g.algorithm);
+            [AR{t}, PE{t}, argsout] = algFcn(...
+                'data', g.taper .* EEG.CAT.srcdata(:,winpnts,:), g.algorithm);
             if isstruct(argsout)
                 % store contents of argsout fields in cell array at index t
                 % e.g. fieldname{t} = argsout.(fieldname)
@@ -1428,7 +1426,8 @@ for t=1:numWins
                 end
             end
         otherwise
-            error('SIFT:est_fitMVAR:badAlgArgs','%s must output either 2 or 3 arguments',algFcnName);
+            error('SIFT:est_fitMVAR:badAlgArgs', ...
+                '%s must output either 2 or 3 arguments', func2str(algFcn));
     end
         
     if g.verb==2
