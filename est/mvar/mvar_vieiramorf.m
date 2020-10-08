@@ -99,7 +99,7 @@ end
 [C] = zeros(M,'double');
 [ARF ARB RCF RCB] = deal(zeros(M,M*morder,'double'));
 PE = zeros(M,M*morder+M,'double');
-[C(:,1:M),n] = covm(data,'M');
+[C(:,1:M),n] = covm(data);
 PE(:,1:M)    = C(:,1:M)./n;
 
 %%%%% Partial Correlation Estimation: Vieira-Morf Method [2] with unbiased covariance estimation
@@ -110,8 +110,8 @@ B = data;
 
 PEF = PE(:,1:M);
 PEB = PE(:,1:M);
-for K = 1:morder,
-        [D,n]	= covm(F(K+1:N,:),B(1:N-K,:),'M');
+for K = 1:morder
+        [D,n]	= covm(F(K+1:N,:), B(1:N-K,:));
         D       = D./n;
 
 
@@ -122,7 +122,7 @@ for K = 1:morder,
         B(1:N-K,:) = B(1:N-K,:) - F(K+1:N,:)*ARB(:,K*M+(1-M:0)).';
         F(K+1:N,:) = tmp;
 
-        for L = 1:K-1,
+        for L = 1:K-1
                 tmp                    = ARF(:,L*M+(1-M:0)) - ARF(:,K*M+(1-M:0))*ARB(:,(K-L)*M+(1-M:0));
                 ARB(:,(K-L)*M+(1-M:0)) = ARB(:,(K-L)*M+(1-M:0)) - ARB(:,K*M+(1-M:0))*ARF(:,L*M+(1-M:0));
                 ARF(:,L*M+(1-M:0))     = tmp;
@@ -131,10 +131,10 @@ for K = 1:morder,
         RCF(:,K*M+(1-M:0)) = ARF(:,K*M+(1-M:0));
         RCB(:,K*M+(1-M:0)) = ARB(:,K*M+(1-M:0));
 
-        [PEF,n] = covm(F(K+1:N,:),F(K+1:N,:),'M');
+        [PEF,n] = covm(F(K+1:N,:), F(K+1:N,:));
         PEF     = PEF./n;
 
-        [PEB,n] = covm(B(1:N-K,:),B(1:N-K,:),'M');
+        [PEB,n] = covm(B(1:N-K,:));
         PEB     = PEB./n;
 
         PE(:,K*M+(1:M)) = PEF;        
